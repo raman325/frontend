@@ -30,7 +30,7 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
 
   private _subscribedToLogsMsg = "";
 
-  private _logLevelMsgs: string[] = [];
+  private _logLevelsSelected: string[] = [];
 
   @query("textarea", true) private _textarea?: HTMLTextAreaElement;
 
@@ -100,7 +100,7 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
             </div>
             <div>
               <mwc-icon-button
-                .disabled=${!this._rawLogs()}
+                .disabled=${this._downloadDisabled}
                 label="Download Logs"
                 @click=${this._downloadLogs}
               >
@@ -141,8 +141,8 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
   }
 
   private _trackLogLevels() {
-    if (!this._logLevelMsgs.includes(this._logConfig!.level)) {
-      this._logLevelMsgs.push(this._logLevelMsg(this._logConfig!.level));
+    if (!this._logLevelsSelected.includes(this._logConfig!.level)) {
+      this._logLevelsSelected.push(this._logLevelMsg(this._logConfig!.level));
     }
   }
 
@@ -161,7 +161,7 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
         )}\n`,
         ""
       );
-      for (const logLevel in this._logLevelMsgs) {
+      for (const logLevel in this._logLevelsSelected) {
         if (logLevel) {
           logs.replace(this._logLevelMsg(logLevel), "");
         }
@@ -169,6 +169,10 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
       return logs;
     }
     return "";
+  }
+
+  private _downloadDisabled() {
+    return this._rawLogs() === "" || this._rawLogs() === null;
   }
 
   private _dropdownSelected(ev) {
