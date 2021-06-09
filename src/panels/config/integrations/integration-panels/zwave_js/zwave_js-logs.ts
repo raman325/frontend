@@ -28,6 +28,10 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
 
   @state() private _logConfig?: ZWaveJSLogConfig;
 
+  @state() private _subscribedToLogsMsg = "";
+
+  @state() private _logLevelMsgs: string[] = [];
+
   @query("textarea", true) private _textarea?: HTMLTextAreaElement;
 
   public hassSubscribe(): Array<UnsubscribeFunc | Promise<UnsubscribeFunc>> {
@@ -44,9 +48,10 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
           this._textarea!.value += `${log.message}\n`;
         }
       }).then((unsub) => {
-        this._textarea!.value += `${this.hass.localize(
+        this._subscribedToLogsMsg = `${this.hass.localize(
           "ui.panel.config.zwave_js.logs.subscribed_to_logs"
         )}\n`;
+        this._textarea!.value += this._subscribedToLogsMsg;
         return unsub;
       }),
     ];
@@ -95,6 +100,7 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
             </div>
             <div>
               <mwc-icon-button
+                .disabled=${!this._rawLogs()}
                 label="Download Logs"
                 @click=${this._downloadLogs}
               >
@@ -124,15 +130,45 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
       this.hass!,
       this.configEntryId
     );
+    this._trackLogLevels();
   }
 
   private _downloadLogs() {
     const aEl = document.createElement("a");
     aEl.download = `zwave_js.log`;
-    aEl.href = `data:text/plain;charset=utf-8,${encodeURI(
-      this._textarea!.value
-    )}`;
+    aEl.href = `data:text/plain;charset=utf-8,${encodeURI(this._rawLogs())}`;
     aEl.click();
+  }
+
+  private _trackLogLevels() {
+    if (!this._logLevelMsgs.includes(this._logConfig!.level)) {
+      this._logLevelMsgs.push(this._logLevelMsg(this._logConfig!.level));
+    }
+  }
+
+  private _logLevelMsg(level: string) {
+    return `${this.hass.localize(
+      "ui.panel.config.zwave_js.logs.log_level_changed",
+      { level: level.charAt(0).toUpperCase() + level.slice(1) }
+    )}\n`;
+  }
+
+  private _rawLogs() {
+    if (this._textarea) {
+      const logs = this._textarea!.value.replace(
+        `${this.hass.localize(
+          "ui.panel.config.zwave_js.logs.subscribed_to_logs"
+        )}\n`,
+        ""
+      );
+      for (const logLevel in this._logLevelMsgs) {
+        if (logLevel) {
+          logs.replace(this._logLevelMsg(logLevel), "");
+        }
+      }
+      return logs;
+    }
+    return "";
   }
 
   private _dropdownSelected(ev) {
@@ -145,10 +181,8 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
     }
     setZWaveJSLogLevel(this.hass!, this.configEntryId, selected);
     this._logConfig.level = selected;
-    this._textarea!.value += `${this.hass.localize(
-      "ui.panel.config.zwave_js.logs.log_level_changed",
-      { level: selected.charAt(0).toUpperCase() + selected.slice(1) }
-    )}\n`;
+    this._trackLogLevels();
+    this._textarea!.value += this._logLevelMsg(this._logConfig!.level);
   }
 
   static get styles(): CSSResultArray {
