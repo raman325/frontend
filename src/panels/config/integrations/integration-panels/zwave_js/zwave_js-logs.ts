@@ -28,9 +28,9 @@ class ZWaveJSLogs extends SubscribeMixin(LitElement) {
 
   @state() private _logConfig?: ZWaveJSLogConfig;
 
-  @state() private _subscribedToLogsMsg = "";
+  private _subscribedToLogsMsg = "";
 
-  @state() private _logLevelMsgs: string[] = [];
+  private _logLevelMsgs: string[] = [];
 
   @query("textarea", true) private _textarea?: HTMLTextAreaElement;
 
